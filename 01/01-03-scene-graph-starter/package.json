@@ -1,0 +1,20 @@
+{
+  "name": "simondev-gamedev-exercise",
+  "version": "0.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "vite": "^5.4.3"
+  },
+  "dependencies": {
+    "three": "^0.167.1"
+  }
+}
