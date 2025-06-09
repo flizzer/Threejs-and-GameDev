@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { Pane } from 'tweakpane';
+import Stats from 'three/addons/libs/stats.module.js';
 
 
 class App {
@@ -10,6 +12,8 @@ class App {
   #scene_ = null;
   #clock_ = null;
   #controls_ = null;
+
+  #stats_ = null;
 
   constructor() {
   }
@@ -32,6 +36,9 @@ class App {
     this.#threejs_.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(this.#threejs_.domElement);
 
+    this.#stats_ = new Stats();
+    document.body.appendChild(this.#stats_.domElement); 
+
     const fov = 60;
     const aspect = window.innerWidth / window.innerHeight;
     const near = 0.1;
@@ -46,6 +53,53 @@ class App {
 
     this.#scene_ = new THREE.Scene();
     this.#scene_.background = new THREE.Color(0x000000);
+
+    const cubeGeo = new THREE.BoxGeometry(1, 1, 1);
+    const cubeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const cube = new THREE.Mesh(cubeGeo, cubeMat);
+
+    this.#scene_.add(cube);
+
+    //Tweakpane
+    const pane = new Pane();
+
+    const PARAMS = {
+      wireframe: false,
+      transparent: false,
+      opacity: 1,
+      cubeColor: '#ffffff',
+      cubeColorRGB: cube.material.color,
+      offset2D: {x:0, y:0},
+      offset3D: {x:0, y:0, z:0}
+    }
+
+    const cubeFolder = pane.addFolder({ title: 'Cube'});
+    cubeFolder.addBinding(PARAMS, 'wireframe').on('change', evt => {
+      cube.material.wireframe = evt.value;
+    })
+    cubeFolder.addBinding(PARAMS, 'transparent').on('change', evt => {
+      cube.material.transparent = evt.value;
+      cube.material.needsUpdate = true;
+    })
+    cubeFolder.addBinding(PARAMS, 'opacity', {min: 0, max: 1, step: .1}).on('change', evt => {
+      cube.material.opacity = evt.value;
+    })
+    cubeFolder.addBinding(PARAMS, 'cubeColor').on('change', evt => {
+      cube.material.color.set(evt.value);
+    })
+    cubeFolder.addBinding(PARAMS, 'cubeColorRGB', { view: 'color', color: { type: 'float' }})
+      .on('change', evt => {
+        cube.material.color.set(evt.value);
+    })
+    cubeFolder.addBinding(PARAMS, 'offset2D').on('change', evt => {
+      //console.log(evt.value);
+      cube.position.set(evt.value.x, 0, evt.value.y);
+    })
+    cubeFolder.addBinding(PARAMS, 'offset3D').on('change', evt => {
+      //console.log(evt.value);
+      cube.position.set(evt.value.x, evt.value.y, evt.value.z);
+    })
+
   }
 
   #onWindowResize_() {
@@ -65,8 +119,10 @@ class App {
 
   #raf_() {
     requestAnimationFrame((t) => {
+      this.#stats_.begin();
       this.#step_(this.#clock_.getDelta());
       this.#render_();
+      this.#stats_.end();
       this.#raf_();
     });
   }
