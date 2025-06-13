@@ -44,7 +44,7 @@ class App {
     const aspect = window.innerWidth / window.innerHeight;
     const near = 0.1;
     const far = 1000;
-   
+  
     this.#perspectiveCamera_ = new THREE.PerspectiveCamera(fov, aspect, near, far);
 
     const width = 3;
@@ -94,7 +94,12 @@ class App {
         perspective: "perspective",
         orthographic: "orthographic"
       },
-      fov: fov
+      fov: fov,
+      near: near,
+      far: far,
+      innerWidth: innerWidth,
+      innerHeight: innerHeight,
+      aspectRatio: aspect
     }
     debugUI.addBinding(this.#debugParams_.camera, 'type', {
       options: {
@@ -117,7 +122,32 @@ class App {
       this.#perspectiveCamera_.fov = evt.value;
       this.#perspectiveCamera_.updateProjectionMatrix();
     })
-
+    debugUI.addBinding(this.#debugParams_, 'near', {
+      min: 0.0, max: 5.0, step: 0.1 
+    }).on('change', (evt) => {
+      this.#camera_.near = evt.value;
+      this.#camera_.updateProjectionMatrix();
+    })
+    debugUI.addBinding(this.#debugParams_, 'far', {
+      min: -5000, max: 5000, step: 100 
+    }).on('change', (evt) => {
+      this.#camera_.far = evt.value;
+      this.#camera_.updateProjectionMatrix();
+    })
+    debugUI.addBinding(this.#debugParams_,'aspectRatio')
+      .on('change', (evt) => {
+        var newAspect = evt.value;
+        var currentCamera = this.#debugParams_.camera.type;
+        if (currentCamera === 'perspective') {
+          this.#camera_.aspect = newAspect;
+        }
+        else {
+          this.#camera_.left = -width * newAspect;
+          this.#camera_.right = width * newAspect;
+        }
+        this.#camera_.updateProjectionMatrix();  
+      }); 
+    
     this.#stats_ = new Stats();
     document.body.appendChild(this.#stats_.domElement);
   }
@@ -133,7 +163,6 @@ class App {
     const aspect = w / h;
 
     this.#threejs_.setSize(w * dpr, h * dpr, false);
-    //this.#camera_.aspect = aspect;
     
     this.#perspectiveCamera_.aspect = aspect;
     this.#perspectiveCamera_.updateProjectionMatrix();
