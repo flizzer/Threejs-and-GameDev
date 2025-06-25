@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Pane } from 'tweakpane';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 
 
 class App {
@@ -95,11 +96,18 @@ class App {
         this.#knot_.visible = true;
     });
 
+    const lightFolder = pane.addFolder({ title: 'Light'});
+    lightFolder.addBinding(
+      pointLight,
+      'position',
+      {x: {min: -2, max: 2}, y: {min: -2, max: 2}, z: {min: -2, max: 2}}
+    );
+
     //can use 3dtextures.me to download textures --bhd
     //can also use pbrmaterials.com
     const material = this.#Test_MeshLambertMaterial(pane);
     //const material = this.#Test_MeshBasicMaterial(pane);
-    const cubeGeo = new THREE.BoxGeometry(1, 1, 1);
+    const cubeGeo = new THREE.BoxGeometry(1, 1, 1, 128, 128, 128);
     this.#cube_ = new THREE.Mesh(cubeGeo, material);
     this.#cube_.castShadow = true;
     this.#cube_.receiveShadow = true;
@@ -127,19 +135,55 @@ class App {
   //basically the simplest material lighting model
   #Test_MeshLambertMaterial(pane) {
     const loader = new THREE.TextureLoader();
-    const map = loader.load('/textures/RED_BRICK_001_1K_BaseColor.jpg')
+    const map = loader.load('/textures/RED_BRICK_001_1K_BaseColor.jpg');
     map.colorSpace = THREE.SRGBColorSpace;
+
+    const normalMap = loader.load('/textures/RED_BRICK_001_1K_Normal.jpg');
+
+    //Note: the ambient occlusion map affects shading in crevices when lit by an ambient light
+    //hence the name.  The hemisphere light in this case is the ambient light source.
     const aoMap = loader.load('/textures/RED_BRICK_001_1K_AmbientOcclusion.jpg');
-    aoMap.colorSpace = THREE.SRGBColorSpace;
+
+    //Displacement Maps affect the acual geometry of the material
+    const displacementMap = loader.load('/textures/displacement.png');
+
+    const rgbeLoader = new RGBELoader();
+
+    //Load an environment map --bhd
+    //Simon uses https://polyhaven.com/hdris for these a lot apparently
+
+    //Note: we're ignoring the bumpMap becauae it's essentially a legacy way of using textures.
+    //If a normal map is supplied, the bumpMap is ignored and in fact, these likely aren't even
+    //supplied by the texture and pbr site listed above
     const material = new THREE.MeshLambertMaterial({
       color: 0xFFFFFF,
-      map: map,
-      aoMap: aoMap
+      //map: map,
+      //aoMap: aoMap,
+      //displacementMap: displacementMap,
+      normalMap: normalMap,
+      
+      //need to set this because the normals weren't correct by default --bhd
+      //basically inverts them so the light and shadows appear correctly
+      //this is due to the "handedness" and needs to be checked when downloading files
+      normalScale: new THREE.Vector2(-1, 1)
+
+      //Emissive maps or colors are unaffected by other lighting.  Can produce a glowing
+      //effect when using a map.
+      //emissiveMap: displacementMap
     });
+
+    rgbeLoader.load('/skybox/golden_bay_4k.hdr', (texture) => {
+      texture.mapping = THREE.EquirectangularReflectionMapping; 
+      //material.envMap = texture;
+      //this.#scene_.background = texture;
+    });
+
     const folder = pane.addFolder({title: 'MeshLambertMaterial'});
     folder.addBinding(material, 'color', { view: 'color', color: { type: 'float' } });
     //folder.addBinding(material, 'wireframe');
     folder.addBinding(material, 'aoMapIntensity', { min: 0, max: 1 });
+    //folder.addBinding(material, 'displacementScale', { min: 0, max: 1 });
+    folder.addBinding(material, 'emissive', { view: 'color', color: { type: 'float' } });
     return material;
   }
 
