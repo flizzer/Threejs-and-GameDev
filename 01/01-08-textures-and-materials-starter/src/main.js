@@ -103,7 +103,9 @@ class App {
       {x: {min: -2, max: 2}, y: {min: -2, max: 2}, z: {min: -2, max: 2}}
     );
 
-    const material = this.#Test_MeshPhongMaterial(pane);
+    const material = this.#Test_MeshStandardMaterial(pane);
+    
+    //const material = this.#Test_MeshPhongMaterial(pane);
 
     //const material = this.#Test_MeshMatCapMaterial(pane);
     
@@ -134,10 +136,51 @@ class App {
     this.#knot_.visible = false;
   }
 
+  #Test_MeshStandardMaterial(pane) {
+    const loader = new THREE.TextureLoader();
+
+    //also known as the diffuse map --bhd
+    const map = loader.load('/textures/RED_BRICK_001_1K_BaseColor.jpg');
+    map.colorSpace = THREE.SRGBColorSpace;
+
+    const normalMap = loader.load('/textures/RED_BRICK_001_1K_Normal.jpg');
+
+    //ThreeJS PBR material; used in most modern engines nowadays --bhd
+    //uses BRDF (Bidirectional Reflectance Distribution Function) from Disney
+    //https://threejs.org/docs/#api/en/materials/MeshStandardMaterial
+    //https://media.disneyanimation.com/uploads/production/publication_asset/48/asset/s2012_pbs_disney_brdf_notes_v3.pdf
+    //instead of the one "shinyness" value, there are metalness and roughness values to play with.
+    const material = new THREE.MeshStandardMaterial({
+      //map: map,
+      //normalMap: normalMap,
+      normalScale: new THREE.Vector2(1, -1)
+    });
+    
+    const rgbeLoader = new RGBELoader()
+    rgbeLoader.load('/skybox/golden_bay_4k.hdr', (texture) => {
+      texture.mapping = THREE.EquirectangularReflectionMapping; 
+      material.envMap = texture;
+      this.#scene_.background = texture;
+    });
+
+    const folder = pane.addFolder({title: 'MeshStandardMaterial'});
+    folder.addBinding(material, 'color', { view: 'color', color: { type: 'float' } });
+    folder.addBinding(material, 'emissive', { view: 'color', color: { type: 'float' } });
+    folder.addBinding(material, 'metalness', { min: 0, max: 1 });
+    folder.addBinding(material, 'roughness', { min: 0, max: 1 });
+    //folder.addBinding(material, 'specular', { view: 'color', color: { type: 'float' } });
+    
+    //controls how tight the specular highlight is basically --bhd
+    //folder.addBinding(material, 'shininess', { min: 0, max: 1000 });
+
+    return material;
+  }
+
   //first lit model we're looking at that takes specular highlights into account --bhd
   //rendering is pretty good, not quite as good as PBR materials, but more performant
   //tends to look a little plasticky according to Simon. He said graphics during PS3/Xbox 360 era
   //were all probably using Phong materials, not PBR ones.
+  //basically a single "shinyness" value to play with
   #Test_MeshPhongMaterial(pane) {
     const loader = new THREE.TextureLoader();
 
