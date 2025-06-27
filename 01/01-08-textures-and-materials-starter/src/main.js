@@ -103,9 +103,14 @@ class App {
       {x: {min: -2, max: 2}, y: {min: -2, max: 2}, z: {min: -2, max: 2}}
     );
 
+    const material = this.#Test_MeshPhongMaterial(pane);
+
+    //const material = this.#Test_MeshMatCapMaterial(pane);
+    
     //can use 3dtextures.me to download textures --bhd
     //can also use pbrmaterials.com
-    const material = this.#Test_MeshLambertMaterial(pane);
+    //const material = this.#Test_MeshLambertMaterial(pane);
+   
     //const material = this.#Test_MeshBasicMaterial(pane);
     const cubeGeo = new THREE.BoxGeometry(1, 1, 1, 128, 128, 128);
     this.#cube_ = new THREE.Mesh(cubeGeo, material);
@@ -127,6 +132,48 @@ class App {
 
     this.#sphere_.visible = false;
     this.#knot_.visible = false;
+  }
+
+  //first lit model we're looking at that takes specular highlights into account --bhd
+  //rendering is pretty good, not quite as good as PBR materials, but more performant
+  //tends to look a little plasticky according to Simon. He said graphics during PS3/Xbox 360 era
+  //were all probably using Phong materials, not PBR ones.
+  #Test_MeshPhongMaterial(pane) {
+    const loader = new THREE.TextureLoader();
+
+    //also known as the diffuse map --bhd
+    const map = loader.load('/textures/RED_BRICK_001_1K_BaseColor.jpg');
+    map.colorSpace = THREE.SRGBColorSpace;
+
+    const normalMap = loader.load('/textures/RED_BRICK_001_1K_Normal.jpg');
+
+    const material = new THREE.MeshPhongMaterial({
+      //map: map,
+      normalMap: normalMap,
+      normalScale: new THREE.Vector2(1, -1)
+    });
+    const folder = pane.addFolder({title: 'MeshPhongMaterial'});
+    folder.addBinding(material, 'color', { view: 'color', color: { type: 'float' } });
+    folder.addBinding(material, 'emissive', { view: 'color', color: { type: 'float' } });
+    folder.addBinding(material, 'specular', { view: 'color', color: { type: 'float' } });
+    
+    //controls how tight the specular highlight is basically --bhd
+    folder.addBinding(material, 'shininess', { min: 0, max: 1000 });
+
+    return material;
+  }
+
+  //can basically "look up the lighting" using a MatCap texture --bhd
+  //Simon says he's never seen one used in his career.  So, adding to our
+  //bag of tricks for knowledge sake, but may never use it in practice.
+  //doesn't react to light.  It's an unlit material.  
+  #Test_MeshMatCapMaterial(pane) {
+    const loader = new THREE.TextureLoader();
+    const matCapTexture = loader.load('/textures/matcap.png');
+    const material = new THREE.MeshMatcapMaterial({
+      matcap: matCapTexture
+    });
+    return material;
   }
 
   //first lit material we're playing with --bhd
