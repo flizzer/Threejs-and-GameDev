@@ -67,6 +67,10 @@ class App {
     const pointLight = new THREE.PointLight(0xFFFFFF, 2, 100);
     pointLight.position.set(0.5, 0.7, 1);
     pointLight.castShadow = true;
+
+    //for comabatting z-fighting found with the toon shader by default --bhd
+    //per Simon, adding a Bias is the easiest way to resolve
+    pointLight.shadow.normalBias = 0.05;
     this.#scene_.add(pointLight);
     const pointLightHelper = new THREE.PointLightHelper(pointLight, 0.1);
     this.#scene_.add(pointLightHelper);
@@ -75,6 +79,7 @@ class App {
     const pane = new Pane();
 
     const params = {
+      //type: 'Knot',
       type: 'Cube',
     };
 
@@ -103,7 +108,19 @@ class App {
       {x: {min: -2, max: 2}, y: {min: -2, max: 2}, z: {min: -2, max: 2}}
     );
 
-    const material = this.#Test_MeshStandardMaterial(pane);
+    const material = this.#Test_LineDashedMaterial(pane);
+    
+    //const material = this.#Test_LineBasicMaterial(pane);
+    
+    //const material = this.#Test_MeshNormalMaterial(pane);
+    
+    //const material = this.#Test_MeshDepthMaterial(pane);
+    
+    //const material = this.#Test_MeshToonMaterial(pane);
+    
+    //const material = this.#Test_MeshPhysicalMaterial(pane);
+    
+    //const material = this.#Test_MeshStandardMaterial(pane);
     
     //const material = this.#Test_MeshPhongMaterial(pane);
 
@@ -114,26 +131,170 @@ class App {
     //const material = this.#Test_MeshLambertMaterial(pane);
    
     //const material = this.#Test_MeshBasicMaterial(pane);
-    const cubeGeo = new THREE.BoxGeometry(1, 1, 1, 128, 128, 128);
-    this.#cube_ = new THREE.Mesh(cubeGeo, material);
+    //const cubeGeo = new THREE.BoxGeometry(1, 1, 1, 128, 128, 128);
+    //this.#cube_ = new THREE.Mesh(cubeGeo, material);
+  
+    //need this for the Line material --bhd
+    //const cubeGeo = new THREE.BoxGeometry(1, 1, 1);
+    //this.#cube_ = new THREE.Line(cubeGeo, material);
+    
+    //need this for the Dashed Line material --bhd
+    const cubeGeo = new THREE.BoxGeometry(1, 1, 1);
+    this.#cube_ = new THREE.Line(cubeGeo.toNonIndexed(), material);
+    this.#cube_.computeLineDistances();
+    
     this.#cube_.castShadow = true;
     this.#cube_.receiveShadow = true;
     this.#scene_.add(this.#cube_);
 
     const sphereGeo = new THREE.SphereGeometry(1, 32, 32);
-    this.#sphere_ = new THREE.Mesh(sphereGeo, material);
+    
+    //need this for the Line material --bhd
+    this.#sphere_ = new THREE.Line(sphereGeo, material);
+    //this.#sphere_ = new THREE.Mesh(sphereGeo, material);
+    
+    //need this for the Dashed Line material --bhd
+    this.#sphere_ = new THREE.Line(sphereGeo.toNonIndexed(), material);
+    this.#sphere_.computeLineDistances();
+    
     this.#sphere_.castShadow = true;
     this.#sphere_.receiveShadow = true;
     this.#scene_.add(this.#sphere_);
 
     const knotGeo = new THREE.TorusKnotGeometry(.5, .1, 100, 16);
-    this.#knot_ = new THREE.Mesh(knotGeo, material);
+    
+    //need this for the Line material --bhd
+    this.#knot_ = new THREE.Line(knotGeo, material);
+    //this.#knot_ = new THREE.Mesh(knotGeo, material);
+    
+    //need this for the Dashed Line material --bhd
+    this.#knot_ = new THREE.Line(knotGeo.toNonIndexed(), material);
+    this.#knot_.computeLineDistances();
+
     this.#knot_.castShadow = true;
     this.#knot_.receiveShadow = true;
     this.#scene_.add(this.#knot_);
 
     this.#sphere_.visible = false;
     this.#knot_.visible = false;
+    this.#cube_.visible = true;
+  }
+
+  #Test_LineDashedMaterial(pane) {
+    const material = new THREE.LineDashedMaterial({
+      dashSize: 0.1,
+      gapSize: 0.15
+    });
+    
+    const folder = pane.addFolder({title: 'LineDashedMaterial'});
+    folder.addBinding(material, 'color', { view: 'color', color: { type: 'float' } });
+    folder.addBinding(material, 'dashSize', { min: 0, max: 1 } );
+    folder.addBinding(material, 'gapSize', { min: 0, max: 1 } );
+
+    return material;
+  }
+
+  #Test_LineBasicMaterial(pane) {
+
+    //creates wireframes using solid lines --bhd
+    //needs a little more setup than the others; can't just drop in and plug and play like the others
+    //see setup of Lines instead of Meshes above.
+    const material = new THREE.LineBasicMaterial({
+      color: 0xFFFFFF
+    });
+
+    const folder = pane.addFolder({title: 'LineBasicMaterial'});
+    folder.addBinding(material, 'color', { view: 'color', color: { type: 'float' } });
+
+    return material;
+  }
+
+  #Test_MeshNormalMaterial(pane) {
+    const loader = new THREE.TextureLoader;
+    const normalMap = loader.load('textures/RED_BRICK_001_1K_Normal.jpg');
+
+    //this can be useful when triaging; for example the handedness of the normals --bhd
+    //from a texture
+    const material = new THREE.MeshNormalMaterial({
+      normalMap: normalMap,
+      normalScale: new THREE.Vector2(1, -1)
+    });
+    return material;
+  }
+
+  #Test_MeshDepthMaterial(pane) {
+    const material = new THREE.MeshDepthMaterial({
+
+    });
+    return material;
+  }
+
+  #Test_MeshToonMaterial(pane) {
+
+    //characterized by very noticable steps in which the light changes
+    //including specular highlights vs. gradual falloff found with other materials.
+    const material = new THREE.MeshToonMaterial({
+
+    });
+    const folder = pane.addFolder({title: 'MeshToonMaterial'});
+    
+    return material;
+  }
+
+  #Test_MeshPhysicalMaterial(pane) {
+    const loader = new THREE.TextureLoader();
+    const anisoMap = loader.load('textures/CarbonFibre_anisotropy.png')
+
+    //this will likely be used in only a few scenarios --bhd
+    //one of the most expensive shaders ThreeJS has to offer.
+    const material = new THREE.MeshPhysicalMaterial({
+      color: 0x808080,
+      anisotropyMap: anisoMap
+    });
+
+    const folder = pane.addFolder({title: 'MeshPhysicalMaterial'});
+    folder.addBinding(material, 'color', { view: 'color', color: { type: 'float' } });
+    //folder.addBinding(material, 'emissive', { view: 'color', color: { type: 'float' } });
+
+    //NVidia paper on what exactly anisotropic lighting is --bhd
+    //https://developer.download.nvidia.com/SDK/9.5/Samples/DEMOS/Direct3D9/src/HLSL_Aniso/docs/HLSL_Aniso.pdf
+    //basically means that specular highlighting can change based on the viewing angle.
+    //one of the most obvious examples is hair apparently according to Simon, also brushed metal:
+    //https://threejs.org/examples/?q=aniso#webgl_loader_gltf_anisotropy
+    //also requires a mapping for the direction of the reflection a la:
+    //https://github.com/KhronosGroup/glTF-Sample-Models/tree/main/2.0/CarbonFibre
+    folder.addBinding(material, 'anisotropy', { min: 0, max: 1 });
+    folder.addBinding(material, 'anisotropyRotation', { min: 0, max: 1 });
+    folder.addBinding(material, 'metalness', { min: 0, max: 1 });
+    folder.addBinding(material, 'roughness', { min: 0, max: 1 });
+    folder.addBinding(material, 'reflectivity', { min: 0, max: 1 });
+    folder.addBinding(material, 'specularIntensity', { min: 0, max: 1 });
+
+    //affects colorization at edges; can see really well with a sphere --bhd
+    folder.addBinding(material, 'iridescence', { min: 0, max: 1 });
+
+    //mostly used to simulate fabrics --bhd
+    //"soft diffuse reflections around edges" per Simon
+    folder.addBinding(material, 'sheen', { min: 0, max: 1 });
+    folder.addBinding(material, 'sheenColor', { view: 'color', color: { type: 'float' } });
+   
+    //best shown with a sphere; determines whether you get a plasticky or glassy look --bhd
+    //works with the thickness, ior (index of refraction), and dispersion (which is basicly chromatic aberration)
+    folder.addBinding(material, 'transmission', { min: 0, max: 1 });
+    folder.addBinding(material, 'thickness', { min: 0, max: 1 });
+    folder.addBinding(material, 'ior', { min: 0, max: 2.33 });
+
+    //very subtle, but "adds a nice touch".  And need this if making something photorealistic --bhd
+    folder.addBinding(material, 'dispersion', { min: 0, max: 1 });
+
+    const rgbeLoader = new RGBELoader()
+    rgbeLoader.load('/skybox/golden_bay_4k.hdr', (texture) => {
+      texture.mapping = THREE.EquirectangularReflectionMapping; 
+      material.envMap = texture;
+      this.#scene_.background = texture;
+    });
+
+    return material;
   }
 
   #Test_MeshStandardMaterial(pane) {
@@ -150,6 +311,7 @@ class App {
     //https://threejs.org/docs/#api/en/materials/MeshStandardMaterial
     //https://media.disneyanimation.com/uploads/production/publication_asset/48/asset/s2012_pbs_disney_brdf_notes_v3.pdf
     //instead of the one "shinyness" value, there are metalness and roughness values to play with.
+    //according to Simon, "gonna get you through most things in a video game"
     const material = new THREE.MeshStandardMaterial({
       //map: map,
       //normalMap: normalMap,
@@ -180,7 +342,9 @@ class App {
   //rendering is pretty good, not quite as good as PBR materials, but more performant
   //tends to look a little plasticky according to Simon. He said graphics during PS3/Xbox 360 era
   //were all probably using Phong materials, not PBR ones.
-  //basically a single "shinyness" value to play with
+  //basically a single "shinyness" value to play with.  Also, the specular highlighting doesn't change
+  //depending on the viewing angle which is contrary to a material that supports anisotropic lighting
+  //such as the MeshPhysicalMaterial
   #Test_MeshPhongMaterial(pane) {
     const loader = new THREE.TextureLoader();
 
