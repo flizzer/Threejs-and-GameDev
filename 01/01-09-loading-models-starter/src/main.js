@@ -65,7 +65,7 @@ class App {
     pointLight.position.set(0.25, -0.5, .75);
     pointLight.castShadow = true;
 
-    //for comabatting z-fighting found with the toon shader by default --bhd
+    //for combatting z-fighting found with the toon shader by default --bhd
     //per Simon, adding a Bias is the easiest way to resolve
     //pointLight.shadow.normalBias = 0.05;
     //this.#scene_.add(pointLight);
@@ -112,6 +112,10 @@ class App {
   #LoadGLTF(path) {
     
     //can load either the .gltf or the glb version with this --bhd
+    //Simon uses these sites for assets:
+    //https://quaternius.com
+    //https://kenney.nl/assets
+    //https://sketchfab.com
     const loader = new GLTFLoader();
     loader.load(path, (gltf) => {
 
