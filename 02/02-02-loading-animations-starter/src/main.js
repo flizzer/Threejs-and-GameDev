@@ -110,7 +110,12 @@ class App {
 
     const loader = new GLTFLoader();
     loader.setPath('./resources/models/YBot/');
+    
+    //Mixamo animations only work with Mixamo models it appears :( --bhd
+    //loader.load('LionO.glb', (gltf) => {
+
     loader.load('YBot.glb', (gltf) => {
+      gltf.scene.position.y = 1;
       gltf.scene.traverse((c) => {
         c.castShadow = true;
         c.receiveShadow = true;
