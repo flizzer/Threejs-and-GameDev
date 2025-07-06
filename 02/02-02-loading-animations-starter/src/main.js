@@ -115,7 +115,6 @@ class App {
     //loader.load('LionO.glb', (gltf) => {
 
     loader.load('YBot.glb', (gltf) => {
-      gltf.scene.position.y = 1;
       gltf.scene.traverse((c) => {
         c.castShadow = true;
         c.receiveShadow = true;
