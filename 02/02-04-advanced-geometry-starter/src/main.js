@@ -50,7 +50,6 @@ function RIDGED_FBM(noise, x, y, octaves, lucanarity, gain) {
   return sum;
 }
 
-
 class App {
 
   #threejs_ = null;
@@ -155,12 +154,9 @@ class App {
       const dropoff = (Math.abs(pos.x) == SIZE || Math.abs(pos.y) == SIZE) ? 1 : 0;
       pos.z -= dropoff * 25;
 
-
-
       positions.array[i + 0] = pos.x
       positions.array[i + 1] = pos.y
       positions.array[i + 2] = pos.z
-      
       
       const col = new THREE.Color();
 
