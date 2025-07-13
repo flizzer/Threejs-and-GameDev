@@ -23,7 +23,7 @@ function lerp(a, b, t) {
 //https://thebookofshaders.com/13/ 
 //https://en.wikipedia.org/wiki/Fractional_Brownian_motion
 function FBM(noise, x, y, octaves, lucanarity, gain) {
-  let amplitude = 1.0;
+  let amplitude = 1.5;
   let frequency = 1.0;
   let sum = 0.0;
 
@@ -81,7 +81,9 @@ class App {
 
     this.#setupThreejs_();
     this.#setupBasicScene_(pane);
-    this.#setupTerrain_(pane);
+    this.#setupKryptonite_(pane);
+    //this.#setupFortressOfSolitude_(pane);
+    //this.#setupTerrain_(pane);
   }
 
   #setupTerrain_(pane) {
@@ -165,6 +167,194 @@ class App {
       //very common pattern in shader programming apparently, but using outside of a shader here
       const t = smoothstep(SAND_CUTOFF, SAND_CUTOFF + 5, pos.z);
       col.lerpColors(SAND, GREEN, t);
+      col.lerpColors(BLACK, col, edgeValue);
+
+      colors.push(col.r, col.g, col.b);
+
+    }
+
+    groundGeometry.setAttribute('color', new THREE.BufferAttribute(
+      new Float32Array(colors), 3));
+
+    //recomputes the below for us after we've messed around with the geometry so lighting works --bhd
+    groundGeometry.computeVertexNormals();
+    groundGeometry.computeTangents();
+    
+    const groundMaterial = new THREE.MeshStandardMaterial({
+      color: 0xFFFFFF,
+      //color: 0x202020,
+      metalness: 0.5,
+      //metalness: 0.1,
+      roughness: 0.1,
+      //roughness: 0.6,
+      //use to view the geo --bhd
+      wireframe: false,
+      vertexColors: true
+    });
+    const groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
+    groundMesh.rotation.x = -Math.PI / 2;
+    groundMesh.receiveShadow = true;
+    this.#scene_.add(groundMesh);
+  }
+
+  #setupKryptonite_(pane) {
+    //const RESOLUTION = 128;
+    const RESOLUTION = 512;
+    const SIZE = 250;
+
+    const noise = createNoise2D(alea(1));
+
+    //Ground
+    const groundGeometry = new THREE.PlaneGeometry(
+      SIZE * 2, SIZE * 2, RESOLUTION, RESOLUTION);
+
+    //Colors
+    const GREEN = new THREE.Color(0x008000);
+    const BLACK = new THREE.Color(0x000000);
+    const SAND_CUTOFF = -5;
+
+    const positions = groundGeometry.attributes.position;
+    const colors = []; 
+
+    //using a factor of 3 here because each position is made up of an x, y, and a z component --bhd
+    //see BufferGeometry as PlaneGeometry inherits from it for item size and other attributes:  
+    //https://threejs.org/docs/#api/en/core/BufferAttribute
+    for (let i = 0; i < positions.count * 3; i += 3) {
+      const pos = new THREE.Vector3().fromArray(positions.array, i);
+
+      pos.z = FBM(noise, pos.x * 0.01, pos.y * 0.01, 10, 2.0, .6) * 20;
+
+      //const ridged = RIDGED_FBM(noise, pos.x * 0.005, pos.y * 0.005, 5, 2.0, 0.5);
+      //pos.z = ridged * 20;
+
+      //flatten the edges
+      const edgeValue = (
+        smoothstep(SIZE - 18, SIZE - 20, Math.abs(pos.x)) *
+        smoothstep(SIZE - 18, SIZE - 20, Math.abs(pos.y))
+      );
+      pos.z *= edgeValue;
+      const dropoff = (Math.abs(pos.x) == SIZE || Math.abs(pos.y) == SIZE) ? 1 : 0;
+      pos.z -= dropoff * 25;
+
+      positions.array[i + 0] = pos.x
+      positions.array[i + 1] = pos.y
+      positions.array[i + 2] = pos.z
+      
+      const col = new THREE.Color();
+
+      //this is saying anything at the SAND_CUTOFF value and below (-5) will be sandy color --bhd
+      //anything above 0 will be GREEN and anything in between will be lerped
+      //very common pattern in shader programming apparently, but using outside of a shader here
+       const t = smoothstep(SAND_CUTOFF, SAND_CUTOFF + 5, pos.z);
+       //col.lerpColors(SAND, GREEN, t);
+       col.lerpColors(BLACK, col, edgeValue);
+       colors.push(col.r, col.g, col.b);
+
+    }
+
+    groundGeometry.setAttribute('color', new THREE.BufferAttribute(
+      new Float32Array(colors), 3));
+
+    //recomputes the below for us after we've messed around with the geometry so lighting works --bhd
+    groundGeometry.computeVertexNormals();
+    groundGeometry.computeTangents();
+    
+    const groundMaterial = new THREE.MeshStandardMaterial({
+      alphaMap: new THREE.Texture(0xFFFFFF),
+      color: GREEN, 
+      //color: 0xFFFFFF,
+      //color: 0x202020,
+      metalness: 1.0,
+      //metalness: 0.1,
+      roughness: 0.1,
+      //roughness: 0.6,
+      //use to view the geo --bhd
+      wireframe: false,
+      vertexColors: true
+    });
+    const groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
+    groundMesh.rotation.x = -Math.PI / 2;
+    groundMesh.receiveShadow = true;
+    this.#scene_.add(groundMesh);
+  }
+
+  #setupFortressOfSolitude_(pane) {
+    //const RESOLUTION = 128;
+    const RESOLUTION = 512;
+    const SIZE = 250;
+
+    const noise = createNoise2D(alea(1));
+
+    //Ground
+    const groundGeometry = new THREE.PlaneGeometry(
+      SIZE * 2, SIZE * 2, RESOLUTION, RESOLUTION);
+
+    //Colors
+    const ICE_WHITE = new THREE.Color(0x808080);
+    const ICE_BLUE = new THREE.Color(0x111111);
+    const BLACK = new THREE.Color(0x000000);
+    const SAND_CUTOFF = -5;
+
+    const positions = groundGeometry.attributes.position;
+    const colors = []; 
+
+    //using a factor of 3 here because each position is made up of an x, y, and a z component --bhd
+    //see BufferGeometry as PlaneGeometry inherits from it for item size and other attributes:  
+    //https://threejs.org/docs/#api/en/core/BufferAttribute
+    for (let i = 0; i < positions.count * 3; i += 3) {
+      const pos = new THREE.Vector3().fromArray(positions.array, i);
+
+      //pos.z = Math.random() * 10;
+      //const distToCenter = pos.distanceTo(new THREE.Vector3());
+      //pos.z = smoothstep(100, 0, distToCenter) * 100;
+      
+      //pos.z = Math.sin(pos.x * 0.05) * Math.sin(pos.y * 0.05) * 10;
+      //pos.z = noise(pos.x * 0.01, pos.y * 0.01) * 10;
+     
+      const duneValue = (1 - Math.abs(noise(pos.x * 0.05, pos.y * 0.05))) * 0.1 - 0.5;     
+      //const duneValue = 1 - Math.abs(noise(pos.x * 0.01, pos.y * 0.01));     
+      const rollingHills = noise(pos.x * 0.01, pos.y * 0.01);
+
+      //simplex noise is usually -1 to 1 (I think because it's sigmoid based) so we need to convert it back to the
+      //convention for noise which is 0 to 1 hence the "* 0.5 + 0.5" at the end --bhd
+      const mixFactor = noise(pos.x * 0.005, pos.y * 0.005) * 0.5 + 0.5;
+
+      //pos.z = FBM(noise, pos.x * 0.01, pos.y * 0.01, 5, 2.0, 0.5) * 10;
+      //pos.z = duneValue * 10;
+      //pos.z = rollingHills * 10;
+
+      //I think we're using the lerp() to blend between the two colors associated 
+      //with dunes and rolling hills here
+      //with the smoothing function value or the mixFactor as the "z" parameter and 
+      //multiplying by an int value as essentially a height factor?
+      //basically lerping the terrain I think? --bhd
+      //pos.z = lerp(duneValue, rollingHills, 2);
+      //pos.z = lerp(duneValue, rollingHills, mixFactor) * 20;
+      pos.z = lerp(duneValue, rollingHills, smoothstep(0.25, 0.55, mixFactor)) * 20;
+      
+      //const ridged = RIDGED_FBM(noise, pos.x * 0.005, pos.y * 0.005, 5, 2.0, 0.5);
+      //pos.z = ridged * 20;
+
+      //flatten the edges
+      const edgeValue = (
+        smoothstep(SIZE - 18, SIZE - 20, Math.abs(pos.x)) *
+        smoothstep(SIZE - 18, SIZE - 20, Math.abs(pos.y))
+      );
+      pos.z *= edgeValue;
+      const dropoff = (Math.abs(pos.x) == SIZE || Math.abs(pos.y) == SIZE) ? 1 : 0;
+      pos.z -= dropoff * 25;
+
+      positions.array[i + 0] = pos.x
+      positions.array[i + 1] = pos.y
+      positions.array[i + 2] = pos.z
+      
+      const col = new THREE.Color();
+
+      //this is saying anything at the SAND_CUTOFF value and below (-5) will be sandy color --bhd
+      //anything above 0 will be GREEN and anything in between will be lerped
+      //very common pattern in shader programming apparently, but using outside of a shader here
+      const t = smoothstep(SAND_CUTOFF, SAND_CUTOFF + 5, pos.z);
+      col.lerpColors(ICE_WHITE, ICE_BLUE, t);
       col.lerpColors(BLACK, col, edgeValue);
 
       colors.push(col.r, col.g, col.b);
