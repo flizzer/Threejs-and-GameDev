@@ -114,7 +114,7 @@ class App {
       fragmentShader: fshText
     });
 
-    //shen using the custom RawShaderMaterial, you get even less --bhd
+    //when using the custom RawShaderMaterial, you get even less --bhd
     //(i.e: camera position, projection matrix, etc.)
     const rawShaderMaterial = new THREE.RawShaderMaterial({
       //so Simon says ThreeJS appears to be supplying these at times even though --bhd
