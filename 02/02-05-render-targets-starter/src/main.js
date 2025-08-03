@@ -135,6 +135,8 @@ class App {
     this.#threejs_.toneMapping = THREE.ACESFilmicToneMapping;
     document.body.appendChild(this.#threejs_.domElement);
 
+    //adjusting the minification and magnification filter controls how smooth/blurry (when LinearFilter is used due to interpolation)
+    //and how blocky/pixelated (when NearestFilter is used cuz a single pixel value is chosent) --bhd
     const options = {
       minFilter: THREE.NearestFilter,
       magFilter: THREE.NearestFilter
